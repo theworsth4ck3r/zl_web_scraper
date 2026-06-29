@@ -13,7 +13,7 @@ def run():
         _http_client.get_doctor_list_url(_SPECIALIZATION_NAME, 1)
     )
 
-    # Example - downloads page 55
+    # Example - downloads given page
     # TODO: add queue of pages range, add threading
     doctors_page_handler = DoctorsPageHandler("psycholog", 70)
     doctors_page_handler.get_doctors_data()
