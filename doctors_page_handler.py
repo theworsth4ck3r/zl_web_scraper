@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 from http_client import HttpClient
 from html_parser import HTMLDocumentParser
 from csv_writer import CsvWriter
+from logs_handler import LogsHandler
 
 
 class DoctorsPageHandler:
@@ -11,13 +12,20 @@ class DoctorsPageHandler:
         self.specialization_name = specialization_name
         self.http_client = HttpClient()
         self.csv_writer = CsvWriter(f"{specialization_name}.csv")
+        self.logs_handler = LogsHandler(f"{specialization_name}.log")
 
     def get_doctors_data(self) -> None:
         _DOCTORS_LIST = []
+        _doctor_list_url = self.http_client.get_doctor_list_url(self.specialization_name, self.page)
 
-        _response = self.http_client.send_request(
-            self.http_client.get_doctor_list_url(self.specialization_name, self.page)
-        )
+        try:
+            _response = self.http_client.send_request(_doctor_list_url)
+        except Exception:
+            self.logs_handler.log_message(
+                f"Something went wrong with getting doctors from url: {_doctor_list_url}. Page: {self.page}",
+                "fail",
+            )
+            return
 
         _HTML_PARSER = HTMLDocumentParser(_response)
 
@@ -32,20 +40,33 @@ class DoctorsPageHandler:
                 )
             )
 
-            phone_number = self.get_phone_number_from_doctor_page(
-                _item.get("data-doctor-url")
-            )
+            try:
+                phone_number = self.get_phone_number_from_doctor_page(
+                    _item.get("data-doctor-url")
+                )
+            except Exception:
+                self.logs_handler.log_message(
+                    f"Something went wrong with getting phone number from: {_item.get('data-doctor-url')}. Page: {self.page}",
+                    "fail",
+                )
+                return
 
             if phone_number:
-                _DOCTORS_LIST.append({
-                    "uuid": uuid.uuid4(),
-                    "name": _item.get("data-doctor-name"),
-                    "specialization": _specialization,
-                    "city": _city_name,
-                    "phone": phone_number
-                })
+                _DOCTORS_LIST.append(
+                    {
+                        "uuid": uuid.uuid4(),
+                        "name": _item.get("data-doctor-name"),
+                        "specialization": _specialization,
+                        "city": _city_name,
+                        "phone": phone_number,
+                    }
+                )
 
         self.csv_writer.write_rows(_DOCTORS_LIST)
+
+        self.logs_handler.log_message(
+            f"Downloaded page: {self.page}. Doctors: {len(_DOCTORS_LIST)}", "success"
+        )
 
     def get_phone_number_from_doctor_page(self, doctor_page_url: str):
         _parser = HTMLDocumentParser(self.http_client.send_request(doctor_page_url))
