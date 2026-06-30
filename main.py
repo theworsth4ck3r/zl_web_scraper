@@ -45,7 +45,6 @@ def run():
             try:
                 # Raises queue.Empty if the queue is empty
                 page = _queue.get_nowait()
-                print(f"Start downloading: {page}")
             except Exception:
                 break
 
