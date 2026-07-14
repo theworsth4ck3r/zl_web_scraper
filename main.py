@@ -37,7 +37,7 @@ def run():
         _http_client.get_doctor_list_url(_SPECIALIZATION_NAME, 1)
     ) if _END_PAGE is None else _END_PAGE
 
-    _queue_handler.fill_queue(_FIRST_PAGE, _LAST_PAGE)
+    _queue_handler.fill_queue(_FIRST_PAGE, _LAST_PAGE + 1)
     _queue = _queue_handler.get_queue()
 
     def thread_worker():
